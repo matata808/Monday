@@ -28,7 +28,10 @@ function Column({ title, tasks, onAddTask, onDragStart, onDragOver, onDrop }) {
     <div
       className="bg-white rounded-xl shadow p-4 flex-1 min-h-96"
       onDragOver={onDragOver}
-      onDrop={onDrop}
+      onDrop={(e) => {
+        e.stopPropagation();
+        onDrop(title);
+      }}
     >
       <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
         {title}

@@ -30,13 +30,33 @@ function App() {
    * Moves the dragged task into the target column.
    * If nothing is being dragged, the function does nothing.
    */
-  function handleDrop(targetStatus) {
+  function handleDrop(targetStatus, targetTaskId = null) {
     if (draggedTaskId === null) return;
-    setTasks((previousTasks) =>
-      previousTasks.map((task) =>
-        task.id === draggedTaskId ? { ...task, status: targetStatus } : task,
-      ),
-    );
+    setTasks((previousTasks) => {
+      const draggedTask = previousTasks.find(
+        (task) => task.id === draggedTaskId,
+      );
+      if (!draggedTask) return previousTasks;
+      const updatedDraggedTask = {
+        ...draggedTask,
+        status: targetStatus,
+      };
+      const tasksWithoutDragged = previousTasks.filter(
+        (task) => task.id !== draggedTaskId,
+      );
+      if (targetTaskId === null || targetTaskId === draggedTaskId)
+        return [...tasksWithoutDragged, updatedDraggedTask];
+      const targetIndex = tasksWithoutDragged.findIndex(
+        (task) => task.id === targetTaskId,
+      );
+      if (targetIndex === -1)
+        return [...tasksWithoutDragged, updatedDraggedTask];
+      return [
+        ...tasksWithoutDragged.slice(0, targetIndex),
+        updatedDraggedTask,
+        ...tasksWithoutDragged.slice(targetIndex),
+      ];
+    });
     setDraggedTaskId(null);
   }
 
@@ -65,21 +85,21 @@ function App() {
           onAddTask={handleAddTask}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
-          onDrop={() => handleDrop("To Do")}
+          onDrop={handleDrop}
         />
         <Column
           title="In Progress"
           tasks={tasks.filter((task) => task.status === "In Progress")}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
-          onDrop={() => handleDrop("In Progress")}
+          onDrop={handleDrop}
         />
         <Column
           title="Done"
           tasks={tasks.filter((task) => task.status === "Done")}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
-          onDrop={() => handleDrop("Done")}
+          onDrop={handleDrop}
         />
       </div>
     </div>
