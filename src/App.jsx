@@ -70,7 +70,6 @@ function App() {
         <Column
           title="In Progress"
           tasks={tasks.filter((task) => task.status === "In Progress")}
-          onAddTask={handleAddTask}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={() => handleDrop("In Progress")}
@@ -78,7 +77,6 @@ function App() {
         <Column
           title="Done"
           tasks={tasks.filter((task) => task.status === "Done")}
-          onAddTask={handleAddTask}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={() => handleDrop("Done")}
