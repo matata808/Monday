@@ -199,3 +199,15 @@ This repo uses `dev` as the staging branch and `main` as the protected release b
 - Use `.github/pull_request_template.md` when opening a PR.
 - Merge feature branches into `dev` through pull requests.
 - Merge `dev` into `main` only when preparing a release.
+
+Long-lived feature branches are reserved for the major product areas:
+
+- `feature/dashboard-shell`
+- `feature/kanban-workspace`
+- `feature/mail-integrations`
+- `feature/journal`
+- `feature/briefing-weather`
+- `feature/backend-api`
+- `feature/database-persistence`
+- `feature/docker-deployment`
+- `feature/security-ci`
