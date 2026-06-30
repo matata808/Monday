@@ -6,7 +6,7 @@ The app provides:
 
 - A professional task workspace with kanban boards, task metadata, drag/drop status changes, ordering, and subtasks.
 - Gmail OAuth setup and readonly Gmail sync.
-- ZFN webmail setup hooks through IMAP verification.
+- ZFN webmail connects through IMAP, stores credentials encrypted, and syncs recent inbox messages.
 - Journal entries for mood, focus, and notes.
 - A dashboard briefing that summarizes inbox, tasks, journal, and system status.
 - SQLite for zero-setup local development and PostgreSQL for containerized/database-backed runs.
@@ -63,7 +63,7 @@ Leave `DATABASE_URL` empty to use SQLite.
 Optional ZFN IMAP:
 
 ```text
-ZFN_IMAP_HOST=
+ZFN_IMAP_HOST=imap.uni-bremen.de
 ZFN_IMAP_PORT=993
 ```
 
@@ -133,16 +133,36 @@ The Gmail integration uses readonly scope.
 
 ### ZFN Webmail
 
-ZFN support currently verifies IMAP connection settings through the API. Full encrypted credential storage and scheduled mailbox sync are follow-up work.
+ZFN support uses IMAP over TLS. Set the shared server defaults:
 
 Set:
 
 ```text
-ZFN_IMAP_HOST=
+ZFN_IMAP_HOST=imap.uni-bremen.de
 ZFN_IMAP_PORT=993
 ```
 
-Never commit mailbox passwords or private IMAP credentials.
+Then connect the mailbox once. The password is verified with IMAP and stored encrypted using `APP_SECRET`.
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/mail-accounts/zfn \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "your.name@uni-bremen.de",
+    "imapHost": "imap.uni-bremen.de",
+    "imapPort": 993,
+    "username": "your-zfn-username",
+    "password": "your-zfn-password"
+  }'
+```
+
+After it returns `verified: true`, sync recent inbox messages:
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/sync/zfn
+```
+
+The dashboard also exposes a `Sync ZFN` button when `ZFN_IMAP_HOST` is configured. Never commit mailbox passwords or private IMAP credentials.
 
 ## Docker
 

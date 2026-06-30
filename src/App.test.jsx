@@ -17,6 +17,7 @@ import {
   fetchAuthProviders,
   fetchDashboard,
   syncGmail,
+  syncZfn,
   updateSubtask,
   updateTask,
 } from "./services/dashboardApi";
@@ -138,7 +139,7 @@ vi.mock("./services/dashboardApi", () => ({
         database: true,
         sqlite: true,
         googleOAuth: true,
-        zfnImap: false,
+        zfnImap: true,
       },
       providers: [
         {
@@ -146,11 +147,17 @@ vi.mock("./services/dashboardApi", () => ({
           name: "Google Gmail",
           configured: true,
         },
+        {
+          id: "zfn",
+          name: "ZFN Webmail",
+          configured: true,
+        },
       ],
     }),
   ),
   fetchDashboard: vi.fn(() => Promise.resolve(dashboard)),
   syncGmail: vi.fn(() => Promise.resolve({ saved: 10 })),
+  syncZfn: vi.fn(() => Promise.resolve({ saved: 5 })),
   updateSubtask: vi.fn(() => Promise.resolve({})),
   updateTask: vi.fn(() => Promise.resolve({})),
 }));
@@ -322,5 +329,18 @@ describe("App", () => {
     expect(fetchDashboard).toHaveBeenCalledTimes(2);
     expect(fetchAuthProviders).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Synced 10 messages")).toBeInTheDocument();
+  });
+
+  it("syncs ZFN and refreshes dashboard data", async () => {
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /sync zfn/i }));
+
+    await waitFor(() => {
+      expect(syncZfn).toHaveBeenCalled();
+    });
+    expect(fetchDashboard).toHaveBeenCalledTimes(2);
+    expect(fetchAuthProviders).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Synced 5 ZFN messages")).toBeInTheDocument();
   });
 });

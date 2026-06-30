@@ -19,6 +19,7 @@ import {
   fetchAuthProviders,
   fetchDashboard,
   syncGmail,
+  syncZfn,
   updateSubtask,
   updateTask,
 } from "./services/dashboardApi";
@@ -398,6 +399,32 @@ function App() {
     }
   }
 
+  async function handleZfnSync() {
+    setApiState((currentState) => ({
+      ...currentState,
+      syncStatus: "Syncing ZFN...",
+    }));
+
+    try {
+      const syncResult = await syncZfn();
+      const dashboard = await fetchDashboard();
+      setBoards(dashboard.boards ?? boards);
+      setTasks(dashboard.tasks);
+      setMailAccounts(dashboard.mailAccounts);
+      setJournalEntries(dashboard.journalEntries);
+      setApiState((currentState) => ({
+        ...currentState,
+        status: dashboard.source ?? currentState.status,
+        syncStatus: `Synced ${syncResult.saved} ZFN messages`,
+      }));
+    } catch {
+      setApiState((currentState) => ({
+        ...currentState,
+        syncStatus: "Connect ZFN first",
+      }));
+    }
+  }
+
   function handleJournalSubmit(event) {
     event.preventDefault();
     if (!journalDraft.focus.trim() && !journalDraft.note.trim()) return;
@@ -456,7 +483,11 @@ function App() {
             tasks={activeTasks}
           />
           <aside className="flex min-h-0 flex-col gap-4">
-            <SystemPanel apiState={apiState} onSyncGmail={handleGmailSync} />
+            <SystemPanel
+              apiState={apiState}
+              onSyncGmail={handleGmailSync}
+              onSyncZfn={handleZfnSync}
+            />
             <InboxPanel accounts={mailAccounts} mailStats={mailStats} />
           </aside>
         </section>

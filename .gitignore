@@ -22,6 +22,9 @@ dist-ssr
 *.db
 *.db-*
 
+# Personal documents should not be bundled into the public app.
+src/assets/*.pdf
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

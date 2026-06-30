@@ -1,8 +1,11 @@
 import { Icon } from "../../shared/Icon";
 
-export function SystemPanel({ apiState, onSyncGmail }) {
+export function SystemPanel({ apiState, onSyncGmail, onSyncZfn }) {
   const googleReady = apiState.providers.some(
     (provider) => provider.id === "google" && provider.configured,
+  );
+  const zfnReady = apiState.providers.some(
+    (provider) => provider.id === "zfn" && provider.configured,
   );
 
   return (
@@ -33,8 +36,8 @@ export function SystemPanel({ apiState, onSyncGmail }) {
         />
         <StatusMetric
           label="ZFN"
-          ready={Boolean(apiState.capabilities.zfnImap)}
-          value={apiState.capabilities.zfnImap ? "IMAP" : "Later"}
+          ready={zfnReady}
+          value={zfnReady ? "IMAP" : "Setup"}
         />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -52,6 +55,15 @@ export function SystemPanel({ apiState, onSyncGmail }) {
         >
           <Icon name="sync" className="h-3.5 w-3.5" />
           Sync Gmail
+        </button>
+        <button
+          className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!zfnReady}
+          onClick={onSyncZfn}
+          type="button"
+        >
+          <Icon name="sync" className="h-3.5 w-3.5" />
+          Sync ZFN
         </button>
       </div>
       {apiState.syncStatus && (
@@ -78,4 +90,3 @@ function StatusMetric({ label, ready, value }) {
     </div>
   );
 }
-

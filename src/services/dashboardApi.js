@@ -94,3 +94,9 @@ export async function syncGmail() {
     method: "POST",
   });
 }
+
+export async function syncZfn() {
+  return request("/api/sync/zfn", {
+    method: "POST",
+  });
+}

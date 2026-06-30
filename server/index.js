@@ -1,4 +1,5 @@
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { config, getRuntimeCapabilities } from "./config.js";
 import { closeDb } from "./db/client.js";
@@ -16,6 +17,9 @@ export function buildServer() {
   fastify.register(cors, {
     origin: config.appUrl,
     credentials: true,
+  });
+  fastify.register(rateLimit, {
+    global: false,
   });
 
   fastify.get("/api/health", async () => ({
