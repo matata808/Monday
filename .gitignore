@@ -12,6 +12,15 @@ coverage
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+!.env.docker.example
+/data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
 
 # Editor directories and files
 .vscode/*

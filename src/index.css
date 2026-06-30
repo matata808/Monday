@@ -1,1 +1,61 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
+
+:root {
+  --background: #0c0c11;
+  --foreground: #f0ebe3;
+  --foreground-soft: rgba(240, 235, 227, 0.78);
+  --foreground-muted: rgba(240, 235, 227, 0.58);
+  --foreground-faint: rgba(240, 235, 227, 0.3);
+  --card: #151519;
+  --card-foreground: #f0ebe3;
+  --primary: #e9a426;
+  --primary-foreground: #0c0c11;
+  --primary-soft: rgba(233, 164, 38, 0.15);
+  --secondary: #1f1f27;
+  --muted: #1a1a21;
+  --muted-foreground: #6b6878;
+  --accent: #2a2a35;
+  --accent-soft: rgba(42, 42, 53, 0.45);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-soft: rgba(255, 255, 255, 0.045);
+  --ring: #e9a426;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.font-display {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

@@ -26,16 +26,16 @@ function Column({ title, tasks, onAddTask, onDragStart, onDragOver, onDrop }) {
 
   return (
     <div
-      className="bg-white rounded-xl shadow p-4 flex-1 min-h-96"
+      className="min-h-96 rounded-lg border border-[#ded7c7] bg-white p-4 shadow-sm"
       onDragOver={onDragOver}
       onDrop={(e) => {
         e.stopPropagation();
         onDrop(title);
       }}
     >
-      <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+      <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#1f2933]">
         {title}
-        <span className="text-sm text-gray-400 font-normal">
+        <span className="text-sm font-normal text-[#706b62]">
           ({tasks.length})
         </span>
       </h2>
@@ -49,9 +49,9 @@ function Column({ title, tasks, onAddTask, onDragStart, onDragOver, onDrop }) {
             onDragStart={() => {
               onDragStart(task.id);
             }}
-            className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm"
+            className="rounded-lg border border-[#e4dece] bg-[#fbfaf6] p-3 shadow-sm"
           >
-            <p className="text-gray-700 text-sm">{task.title}</p>
+            <p className="text-sm text-[#343434]">{task.title}</p>
           </div>
         ))}
       </div>
@@ -65,11 +65,11 @@ function Column({ title, tasks, onAddTask, onDragStart, onDragOver, onDrop }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="Add a task..."
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="flex-1 rounded-lg border border-[#d8d1c1] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#48635c]"
           />
           <button
             onClick={handleAdd}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm"
+            className="rounded-lg bg-[#253f3a] px-3 py-2 text-sm text-white hover:bg-[#345a52]"
           >
             +
           </button>

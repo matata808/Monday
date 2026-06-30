@@ -1,0 +1,63 @@
+name: monday
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dashboard}
+      POSTGRES_USER: ${POSTGRES_USER:-dashboard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-with-a-local-dev-password}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-dashboard} -d ${POSTGRES_DB:-dashboard}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - dashboard-db-data:/var/lib/postgresql/data
+      - ./server/db/migrations/001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql:ro
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 8787
+      APP_URL: http://127.0.0.1:5173
+      APP_SECRET: ${APP_SECRET:-replace-with-a-long-random-local-secret}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dashboard}:${POSTGRES_PASSWORD:-replace-with-a-local-dev-password}@db:5432/${POSTGRES_DB:-dashboard}
+      SQLITE_DATABASE_PATH: ""
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: http://127.0.0.1:8787/api/auth/google/callback
+      ZFN_IMAP_HOST: ${ZFN_IMAP_HOST:-}
+      ZFN_IMAP_PORT: ${ZFN_IMAP_PORT:-993}
+      WEATHER_API_PROVIDER: ${WEATHER_API_PROVIDER:-open-meteo}
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+      WEATHER_LOCATION: ${WEATHER_LOCATION:-Berlin,DE}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8787:8787"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: ""
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  dashboard-db-data:

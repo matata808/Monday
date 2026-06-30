@@ -1,0 +1,40 @@
+import cors from "@fastify/cors";
+import Fastify from "fastify";
+import { config, getRuntimeCapabilities } from "./config.js";
+import { closeDb } from "./db/client.js";
+import { closeSqliteDb } from "./db/sqlite.js";
+import { authRoutes } from "./routes/auth.js";
+import { dashboardRoutes } from "./routes/dashboard.js";
+
+export function buildServer() {
+  const fastify = Fastify({
+    logger: {
+      level: config.nodeEnv === "test" ? "silent" : "info",
+    },
+  });
+
+  fastify.register(cors, {
+    origin: config.appUrl,
+    credentials: true,
+  });
+
+  fastify.get("/api/health", async () => ({
+    ok: true,
+    capabilities: getRuntimeCapabilities(),
+  }));
+
+  fastify.register(authRoutes);
+  fastify.register(dashboardRoutes);
+
+  fastify.addHook("onClose", async () => {
+    await closeDb();
+    closeSqliteDb();
+  });
+
+  return fastify;
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const server = buildServer();
+  await server.listen({ host: config.host, port: config.port });
+}
