@@ -100,6 +100,14 @@ const dashboard = {
   journalEntries: [],
 };
 
+vi.mock("@clerk/react", () => ({
+  ClerkProvider: ({ children }) => children,
+  Show: ({ children }) => children,
+  SignIn: () => null,
+  UserButton: () => null,
+  useUser: () => ({ isLoaded: true, user: { firstName: "Matin" } }),
+}));
+
 vi.mock("./services/dashboardApi", () => ({
   createBoard: vi.fn(({ name }) =>
     Promise.resolve({
@@ -233,7 +241,7 @@ describe("App", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /good morning|good afternoon|good evening/i,
+        name: /good (morning|afternoon|evening), matin/i,
       }),
     ).toBeInTheDocument();
     expect(await screen.findByText("Bremen, DE")).toBeInTheDocument();

@@ -1,3 +1,11 @@
+import { useUser } from "@clerk/react";
+import { clerkEnabled } from "../../shared/clerk";
+
+function UserName() {
+  const { user } = useUser();
+  return user?.firstName ?? "there";
+}
+
 export function GreetingBar({ mailStats, taskStats }) {
   const now = new Date();
   const date = now.toLocaleDateString("en", {
@@ -20,7 +28,7 @@ export function GreetingBar({ mailStats, taskStats }) {
           {date}
         </p>
         <h1 className="font-display text-3xl font-semibold leading-tight text-[var(--foreground)] md:text-4xl">
-          {greeting}, Matin.
+          {greeting}, {clerkEnabled ? <UserName /> : "Matin"}.
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted-foreground)]">
           You have{" "}

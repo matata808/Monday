@@ -1,5 +1,13 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
+async function sessionToken() {
+  try {
+    return (await window.Clerk?.session?.getToken()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function request(path, options) {
   const headers = {
     ...(options?.headers ?? {}),
@@ -7,6 +15,11 @@ async function request(path, options) {
 
   if (options?.body) {
     headers["Content-Type"] = "application/json";
+  }
+
+  const token = await sessionToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, {

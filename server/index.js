@@ -1,3 +1,4 @@
+import { clerkPlugin, getAuth } from "@clerk/fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
@@ -23,6 +24,32 @@ export function buildServer() {
   fastify.register(rateLimit, {
     global: false,
   });
+
+  // Browser redirect flows cannot carry a Clerk session token.
+  const publicApiPaths = new Set([
+    "/api/health",
+    "/api/auth/google/start",
+    "/api/auth/google/callback",
+  ]);
+
+  if (getRuntimeCapabilities().clerkAuth) {
+    fastify.register(clerkPlugin, {
+      publishableKey: config.clerk.publishableKey,
+      secretKey: config.clerk.secretKey,
+    });
+    fastify.addHook("preHandler", async (request, reply) => {
+      const path = request.url.split("?")[0];
+      if (!path.startsWith("/api/") || publicApiPaths.has(path)) return;
+      const { userId } = getAuth(request);
+      if (!userId) {
+        return reply.code(401).send({ error: "Sign in required" });
+      }
+    });
+  } else {
+    fastify.log.warn(
+      "Clerk keys missing; API running without authentication.",
+    );
+  }
 
   fastify.get("/api/health", async () => ({
     ok: true,

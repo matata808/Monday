@@ -1,3 +1,6 @@
+import { UserButton } from "@clerk/react";
+import { clerkEnabled } from "../shared/clerk";
+
 const navTabs = [
   { id: "dashboard", label: "Dashboard" },
   { id: "tasks", label: "Tasks" },
@@ -41,11 +44,17 @@ export function TopNav({ activeTab, onSelectTab }) {
             </button>
           ))}
         </nav>
-        <div className="hidden h-7 w-7 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/15 sm:flex">
-          <span className="font-mono text-[11px] font-medium text-amber-300">
-            M
-          </span>
-        </div>
+        {clerkEnabled ? (
+          <div className="hidden sm:block">
+            <UserButton />
+          </div>
+        ) : (
+          <div className="hidden h-7 w-7 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/15 sm:flex">
+            <span className="font-mono text-[11px] font-medium text-amber-300">
+              M
+            </span>
+          </div>
+        )}
       </div>
     </header>
   );
