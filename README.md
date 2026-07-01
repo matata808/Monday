@@ -144,6 +144,8 @@ ZFN_IMAP_PORT=993
 
 Then connect the mailbox once. The password is verified with IMAP and stored encrypted using `APP_SECRET`.
 
+Use the `Connect ZFN` button on the dashboard's System panel (enabled once `ZFN_IMAP_HOST` is set) to enter your ZFN address, username, and password. It posts to the same endpoint the CLI does:
+
 ```bash
 curl -X POST http://127.0.0.1:8787/api/mail-accounts/zfn \
   -H "Content-Type: application/json" \
@@ -156,13 +158,13 @@ curl -X POST http://127.0.0.1:8787/api/mail-accounts/zfn \
   }'
 ```
 
-After it returns `verified: true`, sync recent inbox messages:
+After it returns `verified: true`, sync recent inbox messages with the `Sync ZFN` button, or:
 
 ```bash
 curl -X POST http://127.0.0.1:8787/api/sync/zfn
 ```
 
-The dashboard also exposes a `Sync ZFN` button when `ZFN_IMAP_HOST` is configured. Never commit mailbox passwords or private IMAP credentials.
+Never commit mailbox passwords or private IMAP credentials.
 
 ## Docker
 

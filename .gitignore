@@ -35,3 +35,6 @@ src/assets/*.pdf
 *.njsproj
 *.sln
 *.sw?
+
+# Local agent tooling
+.claude/

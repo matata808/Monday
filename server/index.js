@@ -6,6 +6,7 @@ import { closeDb } from "./db/client.js";
 import { closeSqliteDb } from "./db/sqlite.js";
 import { authRoutes } from "./routes/auth.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
+import { weatherRoutes } from "./routes/weather.js";
 
 export function buildServer() {
   const fastify = Fastify({
@@ -29,6 +30,7 @@ export function buildServer() {
 
   fastify.register(authRoutes);
   fastify.register(dashboardRoutes);
+  fastify.register(weatherRoutes);
 
   fastify.addHook("onClose", async () => {
     await closeDb();
