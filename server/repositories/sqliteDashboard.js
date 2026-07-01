@@ -469,6 +469,74 @@ export function createSqliteJournalEntry(database, { mood, focus, note }) {
   return entry;
 }
 
+export function upsertZfnAccount(
+  database,
+  { address, displayName = "ZFN Webmail", imapHost, imapPort, username, password },
+) {
+  const user = getOrCreateLocalUser(database);
+  const accountId = id();
+
+  database
+    .prepare(
+      `
+      INSERT INTO mail_accounts (
+        id,
+        user_id,
+        provider,
+        address,
+        display_name,
+        imap_host,
+        imap_port,
+        imap_username,
+        encrypted_secret
+      )
+      VALUES (?, ?, 'zfn', ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, provider, address)
+      DO UPDATE SET
+        display_name = excluded.display_name,
+        imap_host = excluded.imap_host,
+        imap_port = excluded.imap_port,
+        imap_username = excluded.imap_username,
+        encrypted_secret = excluded.encrypted_secret
+    `,
+    )
+    .run(
+      accountId,
+      user.id,
+      address,
+      displayName,
+      imapHost,
+      imapPort,
+      username,
+      encryptSecret(password),
+    );
+
+  return database
+    .prepare("SELECT * FROM mail_accounts WHERE user_id = ? AND provider = 'zfn' AND address = ?")
+    .get(user.id, address);
+}
+
+export function getLatestZfnAccount(database) {
+  const account = database
+    .prepare(
+      `
+      SELECT *
+      FROM mail_accounts
+      WHERE provider = 'zfn'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    )
+    .get();
+
+  if (!account) return null;
+
+  return {
+    ...account,
+    password: decryptSecret(account.encrypted_secret),
+  };
+}
+
 export function getLatestGoogleOAuthAccount(database) {
   const account = database
     .prepare(
@@ -550,6 +618,65 @@ export function upsertMailMessages(database, accountAddress, messages) {
   database
     .prepare("UPDATE mail_accounts SET last_synced_at = ? WHERE id = ?")
     .run(new Date().toISOString(), account.id);
+
+  return messages.length;
+}
+
+export function upsertZfnMailMessages(database, accountId, messages) {
+  const account = database
+    .prepare("SELECT * FROM mail_accounts WHERE id = ? AND provider = 'zfn'")
+    .get(accountId);
+  if (!account) return 0;
+
+  const insert = database.prepare(`
+    INSERT INTO mail_messages (
+      id,
+      account_id,
+      provider_message_id,
+      sender,
+      subject,
+      snippet,
+      action,
+      priority,
+      received_at,
+      raw_metadata
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(account_id, provider_message_id)
+    DO UPDATE SET
+      sender = excluded.sender,
+      subject = excluded.subject,
+      snippet = excluded.snippet,
+      action = excluded.action,
+      priority = excluded.priority,
+      received_at = excluded.received_at,
+      raw_metadata = excluded.raw_metadata
+  `);
+
+  database.exec("BEGIN");
+  try {
+    for (const message of messages) {
+      insert.run(
+        id(),
+        account.id,
+        message.providerMessageId,
+        message.sender,
+        message.subject,
+        message.snippet,
+        message.action,
+        message.priority,
+        message.receivedAt,
+        JSON.stringify(message.rawMetadata ?? {}),
+      );
+    }
+    database
+      .prepare("UPDATE mail_accounts SET last_synced_at = ? WHERE id = ?")
+      .run(new Date().toISOString(), account.id);
+    database.exec("COMMIT");
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  }
 
   return messages.length;
 }

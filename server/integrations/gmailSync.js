@@ -1,17 +1,10 @@
+import { buildReviewAction, classifyPriority } from "./mailMessage.js";
+
 function headerValue(headers, name) {
   return (
     headers.find((header) => header.name.toLowerCase() === name.toLowerCase())
       ?.value ?? ""
   );
-}
-
-function classifyPriority(message) {
-  const subject = message.subject.toLowerCase();
-  const sender = message.sender.toLowerCase();
-  const urgentWords = ["urgent", "deadline", "rechnung", "invoice", "exam"];
-  return urgentWords.some((word) => subject.includes(word) || sender.includes(word))
-    ? 1
-    : 0;
 }
 
 async function gmailRequest(accessToken, path) {
@@ -62,9 +55,11 @@ export async function fetchRecentGmailMessages(accessToken, maxResults = 10) {
         },
       };
 
+      const priority = classifyPriority(normalized);
       return {
         ...normalized,
-        priority: classifyPriority(normalized),
+        priority,
+        action: buildReviewAction({ ...normalized, priority }),
       };
     }),
   );

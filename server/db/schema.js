@@ -47,6 +47,7 @@ export const mailAccounts = pgTable("mail_accounts", {
   address: text("address").notNull(),
   displayName: text("display_name").notNull(),
   imapHost: text("imap_host"),
+  imapPort: integer("imap_port"),
   imapUsername: text("imap_username"),
   encryptedSecret: text("encrypted_secret"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopNav } from "./components/TopNav";
 import { BriefingFeed } from "./features/briefing/BriefingFeed";
+import { BoardPreview } from "./features/dashboard/BoardPreview";
 import { GreetingBar } from "./features/dashboard/GreetingBar";
 import { SystemPanel } from "./features/dashboard/SystemPanel";
+import { WeatherCard } from "./features/dashboard/WeatherCard";
 import { JournalPanel } from "./features/journal/JournalPanel";
 import { TaskBoard } from "./features/kanban/TaskBoard";
 import { statusColumns } from "./features/kanban/constants";
 import { InboxPanel } from "./features/mail/InboxPanel";
 import { useStoredState } from "./hooks/useStoredState";
 import {
+  connectZfn,
   createBoard,
   createJournalEntry,
   createSubtask,
@@ -18,7 +21,9 @@ import {
   deleteTask,
   fetchAuthProviders,
   fetchDashboard,
+  fetchWeather,
   syncGmail,
+  syncZfn,
   updateSubtask,
   updateTask,
 } from "./services/dashboardApi";
@@ -65,6 +70,12 @@ function App() {
     syncStatus: "",
   });
   const [draggedTaskId, setDraggedTaskId] = useState(null);
+  const [activeTab, setActiveTab] = useStoredState(
+    "morning-dashboard.activeTab",
+    "dashboard",
+  );
+  const [weather, setWeather] = useState(null);
+  const [weatherError, setWeatherError] = useState("");
 
   const activeBoard = boards.find((board) => board.id === activeBoardId) ?? boards[0];
   const activeBoardKey = activeBoard?.id ?? "";
@@ -137,7 +148,19 @@ function App() {
       }
     }
 
+    async function loadWeather() {
+      try {
+        const forecast = await fetchWeather();
+        if (cancelled) return;
+        setWeather(forecast);
+      } catch (error) {
+        if (cancelled) return;
+        setWeatherError(error.message || "Weather unavailable");
+      }
+    }
+
     loadDashboard();
+    loadWeather();
     return () => {
       cancelled = true;
     };
@@ -398,6 +421,48 @@ function App() {
     }
   }
 
+  async function handleZfnConnect(credentials) {
+    const zfnProvider = apiState.providers.find(
+      (provider) => provider.id === "zfn",
+    );
+    const result = await connectZfn({
+      ...credentials,
+      imapHost: zfnProvider?.host,
+      imapPort: zfnProvider?.port,
+    });
+    setApiState((currentState) => ({
+      ...currentState,
+      syncStatus: `Connected ${result.connection.address}`,
+    }));
+    return result;
+  }
+
+  async function handleZfnSync() {
+    setApiState((currentState) => ({
+      ...currentState,
+      syncStatus: "Syncing ZFN...",
+    }));
+
+    try {
+      const syncResult = await syncZfn();
+      const dashboard = await fetchDashboard();
+      setBoards(dashboard.boards ?? boards);
+      setTasks(dashboard.tasks);
+      setMailAccounts(dashboard.mailAccounts);
+      setJournalEntries(dashboard.journalEntries);
+      setApiState((currentState) => ({
+        ...currentState,
+        status: dashboard.source ?? currentState.status,
+        syncStatus: `Synced ${syncResult.saved} ZFN messages`,
+      }));
+    } catch {
+      setApiState((currentState) => ({
+        ...currentState,
+        syncStatus: "Connect ZFN first",
+      }));
+    }
+  }
+
   function handleJournalSubmit(event) {
     event.preventDefault();
     if (!journalDraft.focus.trim() && !journalDraft.note.trim()) return;
@@ -425,10 +490,32 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <TopNav />
+      <TopNav activeTab={activeTab} onSelectTab={setActiveTab} />
       <main className="mx-auto flex max-w-[1500px] flex-col gap-8 px-5 py-7 lg:px-8">
-        <GreetingBar mailStats={mailStats} taskStats={taskStats} />
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
+        {activeTab === "dashboard" && (
+          <>
+            <GreetingBar mailStats={mailStats} taskStats={taskStats} />
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-[340px_1fr]">
+              <WeatherCard weather={weather} weatherError={weatherError} />
+              <BoardPreview
+                activeBoard={activeBoard}
+                onOpenBoard={() => setActiveTab("tasks")}
+                taskStats={taskStats}
+                tasks={activeTasks}
+              />
+            </section>
+            <BriefingFeed
+              activeBoard={activeBoard}
+              apiState={apiState}
+              journalEntries={journalEntries}
+              mailAccounts={mailAccounts}
+              mailStats={mailStats}
+              taskStats={taskStats}
+              tasks={activeTasks}
+            />
+          </>
+        )}
+        {activeTab === "tasks" && (
           <TaskBoard
             activeBoard={activeBoard}
             boardDraft={boardDraft}
@@ -455,28 +542,32 @@ function App() {
             taskStats={taskStats}
             tasks={activeTasks}
           />
-          <aside className="flex min-h-0 flex-col gap-4">
-            <SystemPanel apiState={apiState} onSyncGmail={handleGmailSync} />
+        )}
+        {activeTab === "mail" && (
+          <section className="mx-auto flex w-full max-w-3xl flex-col">
             <InboxPanel accounts={mailAccounts} mailStats={mailStats} />
-          </aside>
-        </section>
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-          <BriefingFeed
-            activeBoard={activeBoard}
-            apiState={apiState}
-            journalEntries={journalEntries}
-            mailAccounts={mailAccounts}
-            mailStats={mailStats}
-            taskStats={taskStats}
-            tasks={activeTasks}
-          />
-          <JournalPanel
-            draft={journalDraft}
-            entries={journalEntries}
-            onDraftChange={setJournalDraft}
-            onSubmit={handleJournalSubmit}
-          />
-        </section>
+          </section>
+        )}
+        {activeTab === "journal" && (
+          <section className="mx-auto w-full max-w-3xl">
+            <JournalPanel
+              draft={journalDraft}
+              entries={journalEntries}
+              onDraftChange={setJournalDraft}
+              onSubmit={handleJournalSubmit}
+            />
+          </section>
+        )}
+        {activeTab === "system" && (
+          <section className="mx-auto w-full max-w-xl">
+            <SystemPanel
+              apiState={apiState}
+              onConnectZfn={handleZfnConnect}
+              onSyncGmail={handleGmailSync}
+              onSyncZfn={handleZfnSync}
+            />
+          </section>
+        )}
       </main>
     </div>
   );

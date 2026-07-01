@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS mail_accounts (
   address text NOT NULL,
   display_name text NOT NULL,
   imap_host text,
+  imap_port integer,
   imap_username text,
   encrypted_secret text,
   last_synced_at timestamptz,
@@ -86,6 +87,9 @@ ALTER TABLE tasks
   ADD COLUMN IF NOT EXISTS priority text NOT NULL DEFAULT 'medium',
   ADD COLUMN IF NOT EXISTS due_at text,
   ADD COLUMN IF NOT EXISTS position integer NOT NULL DEFAULT 0;
+
+ALTER TABLE mail_accounts
+  ADD COLUMN IF NOT EXISTS imap_port integer;
 
 DO $$
 BEGIN

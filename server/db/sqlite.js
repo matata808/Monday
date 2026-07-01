@@ -53,6 +53,7 @@ function migrateSqlite(database) {
       address TEXT NOT NULL,
       display_name TEXT NOT NULL,
       imap_host TEXT,
+      imap_port INTEGER,
       imap_username TEXT,
       encrypted_secret TEXT,
       last_synced_at TEXT,
@@ -115,6 +116,15 @@ function migrateSqlite(database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS sync_runs (
+      id TEXT PRIMARY KEY,
+      mail_account_id TEXT NOT NULL REFERENCES mail_accounts(id) ON DELETE CASCADE,
+      status TEXT NOT NULL,
+      message TEXT,
+      started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      finished_at TEXT
+    );
+
     CREATE INDEX IF NOT EXISTS mail_messages_account_received_idx
       ON mail_messages(account_id, received_at DESC);
     CREATE INDEX IF NOT EXISTS tasks_user_status_idx ON tasks(user_id, status);
@@ -127,6 +137,7 @@ function migrateSqlite(database) {
   ensureColumn(database, "tasks", "priority", "TEXT NOT NULL DEFAULT 'medium'");
   ensureColumn(database, "tasks", "due_at", "TEXT");
   ensureColumn(database, "tasks", "position", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(database, "mail_accounts", "imap_port", "INTEGER");
 
   database.exec(`
     CREATE INDEX IF NOT EXISTS tasks_board_status_position_idx

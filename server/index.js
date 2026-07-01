@@ -1,10 +1,12 @@
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { config, getRuntimeCapabilities } from "./config.js";
 import { closeDb } from "./db/client.js";
 import { closeSqliteDb } from "./db/sqlite.js";
 import { authRoutes } from "./routes/auth.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
+import { weatherRoutes } from "./routes/weather.js";
 
 export function buildServer() {
   const fastify = Fastify({
@@ -17,6 +19,9 @@ export function buildServer() {
     origin: config.appUrl,
     credentials: true,
   });
+  fastify.register(rateLimit, {
+    global: false,
+  });
 
   fastify.get("/api/health", async () => ({
     ok: true,
@@ -25,6 +30,7 @@ export function buildServer() {
 
   fastify.register(authRoutes);
   fastify.register(dashboardRoutes);
+  fastify.register(weatherRoutes);
 
   fastify.addHook("onClose", async () => {
     await closeDb();

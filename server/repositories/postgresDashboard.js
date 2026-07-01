@@ -511,3 +511,134 @@ export async function createPostgresJournalEntry(pool, { mood, focus, note }) {
   );
   return result.rows[0];
 }
+
+export async function upsertPostgresZfnAccount(
+  pool,
+  { address, displayName = "ZFN Webmail", imapHost, imapPort, username, password },
+) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const user = await getOrCreatePostgresLocalUser(client);
+    const account = await client.query(
+      `
+        INSERT INTO mail_accounts (
+          user_id,
+          provider,
+          address,
+          display_name,
+          imap_host,
+          imap_port,
+          imap_username,
+          encrypted_secret
+        )
+        VALUES ($1, 'zfn', $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (user_id, provider, address)
+        DO UPDATE SET
+          display_name = EXCLUDED.display_name,
+          imap_host = EXCLUDED.imap_host,
+          imap_port = EXCLUDED.imap_port,
+          imap_username = EXCLUDED.imap_username,
+          encrypted_secret = EXCLUDED.encrypted_secret
+        RETURNING *
+      `,
+      [
+        user.id,
+        address,
+        displayName,
+        imapHost,
+        imapPort,
+        username,
+        encryptSecret(password),
+      ],
+    );
+    await client.query("COMMIT");
+    return account.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getLatestPostgresZfnAccount(pool) {
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM mail_accounts
+      WHERE provider = 'zfn'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+  );
+  const account = result.rows[0];
+  if (!account) return null;
+
+  return {
+    ...account,
+    password: decryptSecret(account.encrypted_secret),
+  };
+}
+
+export async function upsertPostgresZfnMailMessages(pool, accountId, messages) {
+  const accountResult = await pool.query(
+    "SELECT * FROM mail_accounts WHERE id = $1 AND provider = 'zfn'",
+    [accountId],
+  );
+  const account = accountResult.rows[0];
+  if (!account) return 0;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const message of messages) {
+      await client.query(
+        `
+          INSERT INTO mail_messages (
+            account_id,
+            provider_message_id,
+            sender,
+            subject,
+            snippet,
+            action,
+            priority,
+            received_at,
+            raw_metadata
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          ON CONFLICT (account_id, provider_message_id)
+          DO UPDATE SET
+            sender = EXCLUDED.sender,
+            subject = EXCLUDED.subject,
+            snippet = EXCLUDED.snippet,
+            action = EXCLUDED.action,
+            priority = EXCLUDED.priority,
+            received_at = EXCLUDED.received_at,
+            raw_metadata = EXCLUDED.raw_metadata
+        `,
+        [
+          account.id,
+          message.providerMessageId,
+          message.sender,
+          message.subject,
+          message.snippet,
+          message.action,
+          message.priority,
+          message.receivedAt,
+          message.rawMetadata ?? {},
+        ],
+      );
+    }
+    await client.query("UPDATE mail_accounts SET last_synced_at = now() WHERE id = $1", [
+      account.id,
+    ]);
+    await client.query("COMMIT");
+    return messages.length;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}

@@ -15,7 +15,11 @@ async function request(path, options) {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    const body = await response.json().catch(() => null);
+    const issues = body?.issues?.map((issue) => issue.message).join(", ");
+    throw new Error(
+      issues || body?.message || body?.error || `API request failed: ${response.status}`,
+    );
   }
 
   return response.json();
@@ -27,6 +31,10 @@ export async function fetchDashboard() {
 
 export async function fetchAuthProviders() {
   return request("/api/auth/providers");
+}
+
+export async function fetchWeather() {
+  return request("/api/weather");
 }
 
 export async function createTask(task) {
@@ -92,5 +100,18 @@ export async function createJournalEntry(entry) {
 export async function syncGmail() {
   return request("/api/sync/gmail", {
     method: "POST",
+  });
+}
+
+export async function syncZfn() {
+  return request("/api/sync/zfn", {
+    method: "POST",
+  });
+}
+
+export async function connectZfn(connection) {
+  return request("/api/mail-accounts/zfn", {
+    method: "POST",
+    body: JSON.stringify(connection),
   });
 }
