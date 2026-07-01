@@ -1,4 +1,7 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+
+// .env.local wins over .env so `clerk env pull` output takes effect.
+loadEnv({ path: [".env.local", ".env"], quiet: true });
 
 function readNumber(name, fallback) {
   const value = Number(process.env[name]);
@@ -30,6 +33,13 @@ export const config = {
     apiKey: process.env.WEATHER_API_KEY ?? "",
     location: process.env.WEATHER_LOCATION ?? "Berlin,DE",
   },
+  clerk: {
+    publishableKey:
+      process.env.CLERK_PUBLISHABLE_KEY ??
+      process.env.VITE_CLERK_PUBLISHABLE_KEY ??
+      "",
+    secretKey: process.env.CLERK_SECRET_KEY ?? "",
+  },
 };
 
 export function getRuntimeCapabilities() {
@@ -40,5 +50,6 @@ export function getRuntimeCapabilities() {
     googleOAuth: Boolean(config.google.clientId && config.google.clientSecret),
     zfnImap: Boolean(config.zfn.imapHost),
     weather: Boolean(config.weather.provider),
+    clerkAuth: Boolean(config.clerk.publishableKey && config.clerk.secretKey),
   };
 }

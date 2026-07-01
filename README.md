@@ -109,6 +109,24 @@ Default URLs:
 - API: `http://127.0.0.1:8787`
 - Health check: `http://127.0.0.1:8787/api/health`
 
+## Authentication (Clerk)
+
+Sign-in is handled by [Clerk](https://clerk.com). With keys configured, the app
+shows a sign-in screen and every `/api` route (except the health check and the
+Google OAuth redirect flow) requires a session. Without keys, both the app and
+the API run unauthenticated for zero-setup local development.
+
+Set the keys with the Clerk CLI (`clerk env pull` writes `.env.local`) or copy
+them from the Clerk dashboard into `.env`:
+
+```text
+VITE_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+```
+
+The greeting and the avatar menu in the top bar come from the signed-in Clerk
+profile.
+
 ## Mail Setup
 
 ### Gmail
