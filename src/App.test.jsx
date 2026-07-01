@@ -228,6 +228,7 @@ afterEach(() => {
   cleanup();
   window.localStorage.clear();
   vi.clearAllMocks();
+  delete window.Clerk;
 });
 
 function openTab(label) {
@@ -471,6 +472,29 @@ describe("App", () => {
     expect(fetchDashboard).toHaveBeenCalledTimes(2);
     expect(fetchAuthProviders).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Synced 5 ZFN messages")).toBeInTheDocument();
+  });
+
+  it("links Google through Clerk with mail and calendar scopes", async () => {
+    const createExternalAccount = vi.fn(() =>
+      Promise.resolve({ verification: {} }),
+    );
+    window.Clerk = { user: { externalAccounts: [], createExternalAccount } };
+
+    render(<App />);
+
+    openTab("System");
+    fireEvent.click(await screen.findByRole("button", { name: /^connect$/i }));
+
+    await waitFor(() => {
+      expect(createExternalAccount).toHaveBeenCalledWith({
+        strategy: "oauth_google",
+        additionalScopes: [
+          "https://www.googleapis.com/auth/gmail.readonly",
+          "https://www.googleapis.com/auth/calendar.readonly",
+        ],
+        redirectUrl: window.location.href,
+      });
+    });
   });
 
   it("connects a ZFN mailbox through the connect form", async () => {

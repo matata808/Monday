@@ -1,7 +1,9 @@
+import { getAuth } from "@clerk/fastify";
 import { z } from "zod";
 import { config, getRuntimeCapabilities } from "../config.js";
 import { getPool, hasDatabase } from "../db/client.js";
 import { getSqliteDb } from "../db/sqlite.js";
+import { getClerkGoogleAccess } from "../integrations/clerkGoogle.js";
 import { fetchRecentGmailMessages } from "../integrations/gmailSync.js";
 import {
   buildGoogleAuthUrl,
@@ -131,38 +133,66 @@ export async function authRoutes(fastify) {
         },
       },
     },
-    async (_request, reply) => {
-      const account = hasDatabase()
-        ? await getLatestPostgresGoogleOAuthAccount(getPool())
-        : getLatestGoogleOAuthAccount(getSqliteDb());
-      if (!account) {
-        return reply.code(404).send({
-          error: "No connected Gmail account",
-          next: "Use /api/auth/google/start first.",
-        });
+    async (request, reply) => {
+      let accessToken;
+      let email;
+
+      if (getRuntimeCapabilities().clerkAuth) {
+        const { userId } = getAuth(request);
+        const access = await getClerkGoogleAccess(userId);
+        accessToken = access.accessToken;
+        email = access.email;
+        if (!accessToken) {
+          return reply.code(409).send({
+            error: "No Google account linked to your profile",
+            next: "Use the Connect button to link Google with Gmail access.",
+          });
+        }
+      } else {
+        const account = hasDatabase()
+          ? await getLatestPostgresGoogleOAuthAccount(getPool())
+          : getLatestGoogleOAuthAccount(getSqliteDb());
+        if (!account) {
+          return reply.code(404).send({
+            error: "No connected Gmail account",
+            next: "Use /api/auth/google/start first.",
+          });
+        }
+
+        accessToken = account.accessToken;
+        if (!accessToken && account.refreshToken) {
+          const refreshed = await refreshGoogleAccessToken(account.refreshToken);
+          accessToken = refreshed.access_token;
+        }
+
+        if (!accessToken) {
+          return reply.code(409).send({
+            error: "No usable Google access token",
+            next: "Reconnect Gmail.",
+          });
+        }
+        email = account.email;
       }
 
-      let accessToken = account.accessToken;
-      if (!accessToken && account.refreshToken) {
-        const refreshed = await refreshGoogleAccessToken(account.refreshToken);
-        accessToken = refreshed.access_token;
+      let messages;
+      try {
+        messages = await fetchRecentGmailMessages(accessToken, 10);
+      } catch (error) {
+        if (error.message.includes("403") || error.message.includes("401")) {
+          return reply.code(409).send({
+            error: "Google token lacks Gmail access",
+            next: "Reconnect Google to grant the Gmail scope.",
+          });
+        }
+        throw error;
       }
-
-      if (!accessToken) {
-        return reply.code(409).send({
-          error: "No usable Google access token",
-          next: "Reconnect Gmail.",
-        });
-      }
-
-      const messages = await fetchRecentGmailMessages(accessToken, 10);
       const saved = hasDatabase()
-        ? await upsertPostgresMailMessages(getPool(), account.email, messages)
-        : upsertMailMessages(getSqliteDb(), account.email, messages);
+        ? await upsertPostgresMailMessages(getPool(), email, messages)
+        : upsertMailMessages(getSqliteDb(), email, messages);
 
       return {
         status: "synced",
-        account: account.email,
+        account: email,
         saved,
       };
     },

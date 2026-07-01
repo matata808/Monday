@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Icon } from "../../shared/Icon";
+import { clerkEnabled } from "../../shared/clerk";
+import { connectGoogleWithMailScopes } from "../../shared/clerkGoogle";
 
 const emptyZfnDraft = { address: "", username: "", password: "" };
 
@@ -14,6 +16,16 @@ export function SystemPanel({ apiState, onConnectZfn, onSyncGmail, onSyncZfn }) 
   const [zfnDraft, setZfnDraft] = useState(emptyZfnDraft);
   const [zfnSubmitting, setZfnSubmitting] = useState(false);
   const [zfnError, setZfnError] = useState("");
+  const [googleError, setGoogleError] = useState("");
+
+  async function handleGoogleConnect() {
+    setGoogleError("");
+    try {
+      await connectGoogleWithMailScopes();
+    } catch (error) {
+      setGoogleError(error.message || "Could not connect Google");
+    }
+  }
 
   async function handleZfnConnectSubmit(event) {
     event.preventDefault();
@@ -63,13 +75,24 @@ export function SystemPanel({ apiState, onConnectZfn, onSyncGmail, onSyncZfn }) 
         />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <a
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary-soft)]"
-          href="/api/auth/google/start"
-        >
-          <Icon name="external" className="h-3.5 w-3.5" />
-          Connect
-        </a>
+        {clerkEnabled ? (
+          <button
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary-soft)]"
+            onClick={handleGoogleConnect}
+            type="button"
+          >
+            <Icon name="external" className="h-3.5 w-3.5" />
+            Connect
+          </button>
+        ) : (
+          <a
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] transition hover:border-[var(--primary-soft)]"
+            href="/api/auth/google/start"
+          >
+            <Icon name="external" className="h-3.5 w-3.5" />
+            Connect
+          </a>
+        )}
         <button
           className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-3 py-2 text-xs font-semibold text-[var(--primary-foreground)] transition hover:brightness-110"
           onClick={onSyncGmail}
@@ -156,6 +179,9 @@ export function SystemPanel({ apiState, onConnectZfn, onSyncGmail, onSyncZfn }) 
             </button>
           </div>
         </form>
+      )}
+      {googleError && (
+        <p className="mt-3 text-xs font-medium text-red-400">{googleError}</p>
       )}
       {apiState.syncStatus && (
         <p className="mt-3 text-xs font-medium text-[var(--muted-foreground)]">

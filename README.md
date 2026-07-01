@@ -131,26 +131,37 @@ profile.
 
 ### Gmail
 
-1. Create a Google OAuth client in Google Cloud Console.
-2. Enable the Gmail API.
-3. Add this redirect URI:
+With Clerk configured, Google tokens are managed by Clerk — no app-side OAuth
+routes or token storage. One-time setup:
+
+1. Create a Google OAuth client in Google Cloud Console and enable the Gmail
+   and Calendar APIs.
+2. Configure Clerk's Google connection with those custom credentials:
+
+```bash
+clerk config patch --json '{"connection_oauth_google":{"enabled":true,"client_id":"<GOOGLE_CLIENT_ID>","client_secret":"<GOOGLE_CLIENT_SECRET>"}}'
+```
+
+3. Add Clerk's redirect URI to the Google OAuth client (find your frontend API
+   domain in the Clerk dashboard):
 
 ```text
-http://127.0.0.1:8787/api/auth/google/callback
+https://<your-clerk-frontend-api>.clerk.accounts.dev/v1/oauth_callback
 ```
 
 4. Add your Google account as a test user while the OAuth app is in testing mode.
-5. Fill `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` in `.env`.
-6. Start the API and visit:
+5. In the app, press `Connect` on the System page. This links Google to your
+   Clerk profile with the readonly Gmail and Calendar scopes; syncing fetches a
+   fresh token from Clerk on every request, so there is nothing to re-login.
 
-```text
-http://127.0.0.1:8787/api/auth/google/start
-```
+Without Clerk, the legacy flow still works: fill `GOOGLE_CLIENT_ID`,
+`GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` in `.env`, add
+`http://127.0.0.1:8787/api/auth/google/callback` as a redirect URI, and visit
+`/api/auth/google/start`.
 
 The Gmail integration uses readonly scope. The same Google connection also grants
 readonly calendar access, which feeds the Today strip on the dashboard and the
-Calendar tab. If you connected Google before calendar support existed, reconnect
-once to grant the extra scope.
+Calendar tab.
 
 ### ZFN Webmail
 
