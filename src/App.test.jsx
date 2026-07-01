@@ -159,6 +159,36 @@ vi.mock("./services/dashboardApi", () => ({
     }),
   ),
   fetchDashboard: vi.fn(() => Promise.resolve(dashboard)),
+  fetchCalendar: vi.fn(() => {
+    const today = new Date();
+    today.setHours(14, 0, 0, 0);
+    const inThreeDays = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+    return Promise.resolve({
+      account: "person@example.test",
+      events: [
+        {
+          id: "e1",
+          title: "Algorithms lecture",
+          start: today.toISOString(),
+          end: today.toISOString(),
+          allDay: false,
+          location: "MZH 1090",
+          link: "",
+          deadline: false,
+        },
+        {
+          id: "e2",
+          title: "Exam registration closes",
+          start: inThreeDays.toISOString(),
+          end: inThreeDays.toISOString(),
+          allDay: false,
+          location: "",
+          link: "",
+          deadline: true,
+        },
+      ],
+    });
+  }),
   fetchWeather: vi.fn(() =>
     Promise.resolve({
       location: "Bremen, DE",
@@ -216,6 +246,31 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: /open board/i }),
     ).toBeInTheDocument();
+    expect(await screen.findByText("Algorithms lecture")).toBeInTheDocument();
+    expect(screen.queryByText("Exam registration closes")).not.toBeInTheDocument();
+  });
+
+  it("shows upcoming events grouped on the calendar page", async () => {
+    render(<App />);
+
+    await screen.findByText("Algorithms lecture");
+    openTab("Calendar");
+
+    expect(screen.getByRole("heading", { name: "Calendar" })).toBeInTheDocument();
+    expect(screen.getByText("Algorithms lecture")).toBeInTheDocument();
+    expect(screen.getByText("MZH 1090")).toBeInTheDocument();
+    expect(screen.getByText("Exam registration closes")).toBeInTheDocument();
+    expect(screen.getByText("Deadline")).toBeInTheDocument();
+  });
+
+  it("opens the calendar page from the today strip", async () => {
+    render(<App />);
+
+    await screen.findByText("Algorithms lecture");
+    fireEvent.click(screen.getByRole("button", { name: /open calendar/i }));
+
+    expect(screen.getByRole("heading", { name: "Calendar" })).toBeInTheDocument();
+    expect(screen.getByText("Exam registration closes")).toBeInTheDocument();
   });
 
   it("switches pages through the tab bar", async () => {

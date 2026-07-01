@@ -37,6 +37,10 @@ export async function fetchWeather() {
   return request("/api/weather");
 }
 
+export async function fetchCalendar() {
+  return request("/api/calendar/upcoming");
+}
+
 export async function createTask(task) {
   return request("/api/tasks", {
     method: "POST",

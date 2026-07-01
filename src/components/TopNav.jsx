@@ -1,6 +1,7 @@
 const navTabs = [
   { id: "dashboard", label: "Dashboard" },
   { id: "tasks", label: "Tasks" },
+  { id: "calendar", label: "Calendar" },
   { id: "mail", label: "Mail" },
   { id: "journal", label: "Journal" },
   { id: "system", label: "System" },

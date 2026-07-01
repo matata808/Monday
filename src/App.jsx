@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopNav } from "./components/TopNav";
 import { BriefingFeed } from "./features/briefing/BriefingFeed";
+import { CalendarPage, ScheduleStrip } from "./features/calendar/CalendarPanel";
 import { BoardPreview } from "./features/dashboard/BoardPreview";
 import { GreetingBar } from "./features/dashboard/GreetingBar";
 import { SystemPanel } from "./features/dashboard/SystemPanel";
@@ -20,6 +21,7 @@ import {
   deleteSubtask,
   deleteTask,
   fetchAuthProviders,
+  fetchCalendar,
   fetchDashboard,
   fetchWeather,
   syncGmail,
@@ -76,6 +78,8 @@ function App() {
   );
   const [weather, setWeather] = useState(null);
   const [weatherError, setWeatherError] = useState("");
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarError, setCalendarError] = useState("");
 
   const activeBoard = boards.find((board) => board.id === activeBoardId) ?? boards[0];
   const activeBoardKey = activeBoard?.id ?? "";
@@ -159,8 +163,20 @@ function App() {
       }
     }
 
+    async function loadCalendar() {
+      try {
+        const calendar = await fetchCalendar();
+        if (cancelled) return;
+        setCalendarEvents(calendar.events ?? []);
+      } catch (error) {
+        if (cancelled) return;
+        setCalendarError(error.message || "Calendar unavailable");
+      }
+    }
+
     loadDashboard();
     loadWeather();
+    loadCalendar();
     return () => {
       cancelled = true;
     };
@@ -495,6 +511,11 @@ function App() {
         {activeTab === "dashboard" && (
           <>
             <GreetingBar mailStats={mailStats} taskStats={taskStats} />
+            <ScheduleStrip
+              calendarError={calendarError}
+              events={calendarEvents}
+              onOpenCalendar={() => setActiveTab("calendar")}
+            />
             <section className="grid grid-cols-1 gap-6 xl:grid-cols-[340px_1fr]">
               <WeatherCard weather={weather} weatherError={weatherError} />
               <BoardPreview
@@ -542,6 +563,11 @@ function App() {
             taskStats={taskStats}
             tasks={activeTasks}
           />
+        )}
+        {activeTab === "calendar" && (
+          <section className="mx-auto w-full max-w-3xl">
+            <CalendarPage calendarError={calendarError} events={calendarEvents} />
+          </section>
         )}
         {activeTab === "mail" && (
           <section className="mx-auto flex w-full max-w-3xl flex-col">
