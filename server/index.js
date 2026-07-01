@@ -5,6 +5,7 @@ import { config, getRuntimeCapabilities } from "./config.js";
 import { closeDb } from "./db/client.js";
 import { closeSqliteDb } from "./db/sqlite.js";
 import { authRoutes } from "./routes/auth.js";
+import { calendarRoutes } from "./routes/calendar.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { weatherRoutes } from "./routes/weather.js";
 
@@ -29,6 +30,7 @@ export function buildServer() {
   }));
 
   fastify.register(authRoutes);
+  fastify.register(calendarRoutes);
   fastify.register(dashboardRoutes);
   fastify.register(weatherRoutes);
 

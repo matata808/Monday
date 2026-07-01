@@ -129,7 +129,10 @@ http://127.0.0.1:8787/api/auth/google/callback
 http://127.0.0.1:8787/api/auth/google/start
 ```
 
-The Gmail integration uses readonly scope.
+The Gmail integration uses readonly scope. The same Google connection also grants
+readonly calendar access, which feeds the Today strip on the dashboard and the
+Calendar tab. If you connected Google before calendar support existed, reconnect
+once to grant the extra scope.
 
 ### ZFN Webmail
 
